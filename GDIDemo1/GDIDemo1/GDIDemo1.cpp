@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <time.h>
+#pragma comment(lib,"winmm.lib")
 
 #define WINDOW_WIDTH 800
 #define  WINDOW_HEIGHT 600
@@ -6,6 +8,13 @@
 
 //定义全局变量
 HDC g_hdc = NULL;//全局设备环境变量
+HPEN g_hPen[7] = {0};//画笔句柄数组
+HBRUSH g_hBrush[7] = {0};//画刷句柄数组
+int g_iPenStyle[7] = {PS_SOLID,PS_DASH,PS_DOT,PS_DASHDOT,
+	PS_DASHDOTDOT,PS_NULL,PS_INSIDEFRAME};//定义画笔样式并初始化
+int g_iBrushStyle[7] = {HS_VERTICAL,HS_HORIZONTAL,HS_CROSS,HS_DIAGCROSS,
+	HS_FDIAGONAL,HS_BDIAGONAL};//定义画刷样式并初始化
+
 
 //函数声明
 
@@ -69,6 +78,8 @@ int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,i
 		return FALSE;
 	}
 
+	PlaySound(L"1.wav",NULL,SND_FILENAME | SND_ASYNC | SND_LOOP);
+
 	//消息循环过程
 	MSG msg ={0};
 
@@ -98,7 +109,7 @@ LRESULT CALLBACK WndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
 	case WM_PAINT:
 		g_hdc = BeginPaint(hwnd,&paintStruct);
 		Game_Paint(hwnd);
-		EndPaint(hwnd,NULL);
+		EndPaint(hwnd, NULL);
 		ValidateRect(hwnd,NULL);
 		break;
 	case WM_KEYDOWN:
@@ -120,6 +131,22 @@ LRESULT CALLBACK WndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
 BOOL Game_Init(HWND hwnd)
 {
 	g_hdc = GetDC(hwnd);
+	srand((unsigned)time(NULL));
+
+	for (int i=0;i<=6;i++)
+	{
+		g_hPen[i] = CreatePen(g_iPenStyle[i],1,RGB(rand()%256,rand()%256,rand()%256));
+		
+		if (i == 6)
+		{
+			g_hBrush[i] = CreateSolidBrush(RGB(rand()%256,rand()%256,rand()%256));
+		} 
+		else
+		{
+			g_hBrush[i] = CreateHatchBrush(g_iBrushStyle[i],RGB(rand()%256,rand()%256,rand()%256));
+		}
+	}
+
 	Game_Paint(hwnd);
 	ReleaseDC(hwnd,g_hdc);
 	return TRUE;
@@ -127,25 +154,36 @@ BOOL Game_Init(HWND hwnd)
 
 VOID Game_Paint(HWND hwnd)
 {
-	HFONT hFont = CreateFont(30,0,0,0,0,0,0,0,GB2312_CHARSET,0,0,0,0,L"微软雅黑");
-	SelectObject(g_hdc,hFont);
-	SetBkMode(g_hdc,TRANSPARENT);
+	int  y=0;
 
-	wchar_t text1[] = L"梦想还是要有的，万一实现了呢？";
-	wchar_t text2[] = L"————马云";
+	for (int i=0;i<=6;i++)
+	{
+		y=(i+1)*70;
 
-	SetTextColor(g_hdc,RGB(50,255,50));
-	TextOut(g_hdc,30,150,text1,wcslen(text1));
+		SelectObject(g_hdc,g_hPen[i]);
+		MoveToEx(g_hdc,30,y,NULL);
+		LineTo(g_hdc,100,y);
+	}
 
-	SetTextColor(g_hdc,RGB(50,50,255));
-	TextOut(g_hdc,500,200,text2,wcslen(text2));     
+	int x1 = 120;
+	int x2 = 190;
 
-	DeleteObject(hFont);
+	for (int i=0;i<=6;i++)
+	{
+		SelectObject(g_hdc,g_hBrush[i]);
+		Rectangle(g_hdc,x1,70,x2,y);
+		x1 += 90;
+		x2 += 90;
+	}
 }
 
 BOOL Game_CleanUp(HWND hwnd)
 {
+	for(int i=0;i<=6;i++)
+	{
+		DeleteObject(g_hPen[i]);
+		DeleteObject(g_hBrush[i]);
+	}
 	return TRUE;  
 }
 
-  

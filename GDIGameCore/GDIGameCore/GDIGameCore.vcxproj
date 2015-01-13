@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{056B4491-2B4D-46F5-82D6-D098975CD97A}</ProjectGuid>
+    <ProjectGuid>{589E3AA4-8214-49B7-926C-C41400666C86}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>GDIDemo3</RootNamespace>
+    <RootNamespace>GDIGameCore</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -76,7 +76,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GDIDemo3.cpp" />
+    <ClCompile Include="GDIGameCore.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

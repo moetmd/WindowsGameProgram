@@ -10,7 +10,7 @@ HDC g_hdc = NULL;//全局设备环境变量
 //函数声明
 
 LRESULT CALLBACK WndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam);//窗口过程函数
-BOOL Game_Init(HWND hwnd);//游戏资源初始化
+BOOL Game_Init(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam);//游戏资源初始化
 VOID Game_Paint(HWND hwnd);//游戏绘图函数
 BOOL Game_CleanUp(HWND hwnd);//游戏资源清理
 
@@ -98,7 +98,7 @@ LRESULT CALLBACK WndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
 	case WM_PAINT:
 		g_hdc = BeginPaint(hwnd,&paintStruct);
 		Game_Paint(hwnd);
-		EndPaint(hwnd,NULL);
+		EndPaint(hwnd);
 		ValidateRect(hwnd,NULL);
 		break;
 	case WM_KEYDOWN:
@@ -127,20 +127,7 @@ BOOL Game_Init(HWND hwnd)
 
 VOID Game_Paint(HWND hwnd)
 {
-	HFONT hFont = CreateFont(30,0,0,0,0,0,0,0,GB2312_CHARSET,0,0,0,0,L"微软雅黑");
-	SelectObject(g_hdc,hFont);
-	SetBkMode(g_hdc,TRANSPARENT);
 
-	wchar_t text1[] = L"梦想还是要有的，万一实现了呢？";
-	wchar_t text2[] = L"————马云";
-
-	SetTextColor(g_hdc,RGB(50,255,50));
-	TextOut(g_hdc,30,150,text1,wcslen(text1));
-
-	SetTextColor(g_hdc,RGB(50,50,255));
-	TextOut(g_hdc,500,200,text2,wcslen(text2));     
-
-	DeleteObject(hFont);
 }
 
 BOOL Game_CleanUp(HWND hwnd)
@@ -148,4 +135,3 @@ BOOL Game_CleanUp(HWND hwnd)
 	return TRUE;  
 }
 
-  
