@@ -4,7 +4,9 @@
 #define WINDOW_HEIGHT 600
 #define WINDOＷ_TITLE L"GDIDEMO4"
 
-HDC g_hdc = NULL;//全局设备环境句柄
+HDC g_hdc = NULL, g_mdc = NULL;//全局设备环境句柄
+HBITMAP g_hBitmap = NULL;
+
 
 LRESULT CALLBACK WndProc (HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam);//窗口过程函数
 BOOL Game_Init(HWND hwnd);//资源初始化
@@ -72,25 +74,69 @@ int WINAPI WinMain( _In_ HINSTANCE hInstance,
 //WndProc函数
 LRESULT CALLBACK WndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
 {
+	PAINTSTRUCT paintStruct;
 
+	switch (message)
+	{
+	case WM_PAINT:
+		g_hdc = BeginPaint(hwnd,&paintStruct);
+		Game_Paint(hwnd);
+		EndPaint(hwnd,&paintStruct);
+		ValidateRect(hwnd,NULL);//更新客户区显示
+		break;
+		
+	case WM_KEYDOWN:
+		if (wParam == VK_ESCAPE)
+		{
+			DestroyWindow(hwnd);
+		}
+		break;
+
+	case WM_DESTROY:
+		Game_CleanUp(hwnd);
+		PostQuitMessage(0);
+		break;
+
+	default:
+		return DefWindowProc(hwnd,message,wParam,lParam);
+	}
+
+	return 0;
 }
 
 //Game_Init函数
 BOOL Game_Init(HWND hwnd)
 {
+	g_hdc = GetDC(hwnd);
 
+	//加载位图
+	g_hBitmap = (HBITMAP)LoadImage(NULL,L"1.bmp",IMAGE_BITMAP,800,600,LR_LOADFROMFILE);
+
+	//建立兼容DC
+	g_mdc = CreateCompatibleDC(g_hdc);
+
+	Game_Paint(hwnd);
+	ReleaseDC(hwnd,g_hdc);
+	return TRUE;
 }
 
 
 //Game_Paint函数
 VOID Game_Paint(HWND hwnd)
 {
+	//选用位图对象
+	SelectObject(g_mdc,g_hBitmap);
 
+	//进行贴图
+	BitBlt(g_hdc,0,0,WINDOW_WIDTH,WINDOW_HEIGHT,g_mdc,0,0,SRCCOPY);
 }
 
 //Game_CleanUp函数
 BOOL Game_CleanUp(HWND hwnd)
 {
-
+	//释放资源
+	DeleteObject(g_hBitmap);
+	DeleteDC(g_mdc);
+	return TRUE;
 }
 
