@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------------------------
 #include <windows.h>
 #include <stdio.h>
+#include <time.h>
 #pragma  comment(lib,"Msimg32.lib");
 
 
@@ -16,16 +17,26 @@
 //------------------------------------------------------------------------------------------------
 #define WINDOW_WIDTH	800						//为窗口宽度定义的宏，以方便在此处修改窗口宽度
 #define WINDOW_HEIGHT	 600						//为窗口高度定义的宏，以方便在此处修改窗口高度
-#define WINDOW_TITLE 	L"GDIDEMO8"	//为窗口标题定义的宏
+#define WINDOW_TITLE 	L"GDIDEMO9"	//为窗口标题定义的宏
+#define SPRITE_NUMBER 3
 
+//-----------------------------------【全局结构体定义部分】-------------------------------------
+//	描述：全局结构体的定义
+//------------------------------------------------------------------------------------------------
+struct Sprites
+{
+	int x,y;
+	int direction;
+};
 
 //-----------------------------------【全局变量声明部分】-------------------------------------
 //	描述：全局变量的声明
 //------------------------------------------------------------------------------------------------
 HDC		g_hdc=NULL,g_mdc=NULL,g_bufdc=NULL;       //全局设备环境句柄
-HBITMAP g_hSprite=NULL,g_hBackGround=NULL;
+HBITMAP g_hSprite[4],g_hBackGround=NULL;
 DWORD g_tPre = 0,g_tNow = 0;
-int g_iNum,g_iX=0,g_iY=0;
+int g_iPicNum,g_iX=0,g_iY=0;
+Sprites Sprite[SPRITE_NUMBER];
 
 //-----------------------------------【全局函数声明部分】-------------------------------------
 //	描述：全局函数声明，防止“未声明的标识”系列错误
@@ -52,14 +63,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	wndClass.hCursor = LoadCursor( NULL, IDC_ARROW );    //指定窗口类的光标句柄。
 	wndClass.hbrBackground=(HBRUSH)GetStockObject(GRAY_BRUSH);  //为hbrBackground成员指定一个灰色画刷句柄	
 	wndClass.lpszMenuName = NULL;						//用一个以空终止的字符串，指定菜单资源的名字。
-	wndClass.lpszClassName = L"GDIDEMO8";		//用一个以空终止的字符串，指定窗口类的名字。
+	wndClass.lpszClassName = L"GDIDEMO9";		//用一个以空终止的字符串，指定窗口类的名字。
 
 	//【2】窗口创建四步曲之二：注册窗口类
 	if( !RegisterClassEx( &wndClass ) )				//设计完窗口后，需要对窗口类进行注册，这样才能创建该类型的窗口
 		return -1;		
 
 	//【3】窗口创建四步曲之三：正式创建窗口
-	HWND hwnd = CreateWindow( L"GDIDEMO8",WINDOW_TITLE,				//喜闻乐见的创建窗口函数CreateWindow
+	HWND hwnd = CreateWindow( L"GDIDEMO9",WINDOW_TITLE,				//喜闻乐见的创建窗口函数CreateWindow
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH,
 		WINDOW_HEIGHT, NULL, NULL, hInstance, NULL );
 
@@ -95,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	}
 
 	//【6】窗口类的注销
-	UnregisterClass(L"GDIDEMO8", wndClass.hInstance);  //程序准备结束，注销窗口类
+	UnregisterClass(L"GDIDEMO9", wndClass.hInstance);  //程序准备结束，注销窗口类
 	return 0;  
 }
 
@@ -141,6 +152,7 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam 
 //------------------------------------------------------------------------------------------------
 BOOL Game_Init( HWND hwnd )
 {
+	srand((unsigned)time(NULL));
 	HBITMAP bmp;
 
 	g_hdc = GetDC(hwnd);
@@ -150,14 +162,47 @@ BOOL Game_Init( HWND hwnd )
 	bmp = CreateCompatibleBitmap(g_hdc,WINDOW_WIDTH,WINDOW_HEIGHT);
 
 	SelectObject(g_mdc,bmp);
-	g_hSprite=(HBITMAP)LoadImage(NULL,L"goright.bmp",IMAGE_BITMAP,480,108,LR_LOADFROMFILE);
-	g_hBackGround=(HBITMAP)LoadImage(NULL,L"bg.bmp",IMAGE_BITMAP,WINDOW_WIDTH,WINDOW_HEIGHT,LR_LOADFROMFILE);
 
-	g_iX = 0;
-	g_iY = 350;
+
+	g_hBackGround=(HBITMAP)LoadImage(NULL,L"bg.bmp",IMAGE_BITMAP,WINDOW_WIDTH,WINDOW_HEIGHT,LR_LOADFROMFILE);
+	g_hSprite[0]=(HBITMAP)LoadImage(NULL,L"11.bmp",IMAGE_BITMAP,384,96,LR_LOADFROMFILE);//下
+	g_hSprite[1]=(HBITMAP)LoadImage(NULL,L"22.bmp",IMAGE_BITMAP,384,96,LR_LOADFROMFILE);//左
+	g_hSprite[2]=(HBITMAP)LoadImage(NULL,L"33.bmp",IMAGE_BITMAP,384,96,LR_LOADFROMFILE);//右
+	g_hSprite[3]=(HBITMAP)LoadImage(NULL,L"44.bmp",IMAGE_BITMAP,384,96,LR_LOADFROMFILE);//上
+
+	for (int i=0;i<SPRITE_NUMBER;i++)
+	{
+		Sprite[i].direction = 3;
+		Sprite[i].x=rand()%WINDOW_WIDTH;
+		Sprite[i].y=rand()%WINDOW_HEIGHT;
+	}
 
 	Game_Paint(hwnd);
 	return TRUE;
+}
+
+void BubSort( int n ) 
+{
+	int i , j;
+	bool f;
+	Sprites tmp;
+
+	for (i=0;i<n-1;i++)
+	{
+		f = false;
+		for (j=0;j<n-i-1;j++)
+		{
+			if(Sprite[j+1].y < Sprite[j].y)
+			{
+				tmp = Sprite[j+1];
+				Sprite[j+1] = Sprite[j];
+				Sprite[j] = tmp;
+				f = true;
+			}
+		}
+		if(!f)
+			break;
+	}
 }
 
 //-----------------------------------【Game_Paint( )函数】--------------------------------------
@@ -165,29 +210,71 @@ BOOL Game_Init( HWND hwnd )
 //--------------------------------------------------------------------------------------------------
 VOID Game_Paint( HWND hwnd )
 {
-	if (g_iNum == 8)
+	if (g_iPicNum == 4)
 	{
-		g_iNum = 0;
+		g_iPicNum = 0;
 	}
 
 	//贴图
 	SelectObject(g_bufdc,g_hBackGround);
 	BitBlt(g_mdc,0,0,WINDOW_WIDTH,WINDOW_HEIGHT,g_bufdc,0,0,SRCCOPY);
 
-	SelectObject(g_bufdc,g_hSprite);
-	TransparentBlt(g_mdc,g_iX,g_iY,60,108,g_bufdc,g_iNum*60,0,60,108,RGB(255,0,0));
+	BubSort(SPRITE_NUMBER);
+
+	for (int i = 0; i<SPRITE_NUMBER; i++)
+	{
+		SelectObject(g_bufdc,g_hSprite[Sprite[i].direction]);
+		TransparentBlt(g_mdc,Sprite[i].x,Sprite[i].y,96,96,g_bufdc,g_iPicNum*96,0,96,96,RGB(0,0,0));
+	}
+
 
 	BitBlt(g_hdc,0,0,WINDOW_WIDTH,WINDOW_HEIGHT,g_mdc,0,0,SRCCOPY);
 
 
 
 	g_tPre = GetTickCount();
-	g_iNum++;
+	g_iPicNum++;
 
-	g_iX+=10;
+	for (int i = 0; i<SPRITE_NUMBER; i++)
+	{
+		switch (rand()%4)
+		{
+		case 0 : //上
+			Sprite[i].y -=20;
+			if (Sprite[i].y < 0)
+			{
+				Sprite[i].y = 0;
+			}
+			Sprite[i].direction = 3;
+			break;
 
-	if(g_iX>=WINDOW_WIDTH)
-		g_iX = -60;
+		case 1: //下
+			Sprite[i].y += 20;
+			if (Sprite[i].y > WINDOW_HEIGHT)
+			{
+				Sprite[i].y = WINDOW_HEIGHT;
+			}
+			Sprite[i].direction = 0;
+			break;
+
+		case 2:  //左
+			Sprite[i].x -=20;
+			if(Sprite[i].x < 0)
+				Sprite[i].x = 0;
+			Sprite[i].direction = 1;
+			break;
+
+		case 3: //右
+			Sprite[i].x +=20;
+			if(Sprite[i].x > WINDOW_WIDTH-100)
+				Sprite[i].x = WINDOW_WIDTH-100;
+			Sprite[i].direction = 2;
+			break;
+
+		default:
+			break;
+		}
+	}
 
 }
 
@@ -197,7 +284,7 @@ VOID Game_Paint( HWND hwnd )
 BOOL Game_CleanUp( HWND hwnd )
 {
 	KillTimer(hwnd,1);
-
+	DeleteDC(g_bufdc);
 	DeleteDC(g_mdc);
 	ReleaseDC(hwnd,g_hdc);
 	return TRUE;
