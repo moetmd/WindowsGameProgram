@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GDIDEMO11.cpp">
+    <ClCompile Include="GDIDEMO12.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

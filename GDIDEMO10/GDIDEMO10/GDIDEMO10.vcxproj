@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{884BA424-CA55-495F-898E-AF18D37C51AC}</ProjectGuid>
+    <ProjectGuid>{4A122480-99D9-4C29-9BE9-0C908E1C6171}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>GDIDEMO11</RootNamespace>
+    <RootNamespace>GDIDEMO10</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -78,7 +78,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GDIDEMO11.cpp" />
+    <ClCompile Include="GDIDEMO10.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
