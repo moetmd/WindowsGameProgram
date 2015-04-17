@@ -1,5 +1,3 @@
-
-
 //-----------------------------------【头文件包含部分】---------------------------------------
 //	描述：包含程序所依赖的头文件
 //------------------------------------------------------------------------------------------------
@@ -14,7 +12,7 @@
 //------------------------------------------------------------------------------------------------
 #define WINDOW_WIDTH	800							//为窗口宽度定义的宏，以方便在此处修改窗口宽度
 #define WINDOW_HEIGHT	600							//为窗口高度定义的宏，以方便在此处修改窗口高度
-#define WINDOW_TITLE	L"D3DdemoCore"		//为窗口标题定义的宏
+#define WINDOW_TITLE	L"D3Ddemo1"		//为窗口标题定义的宏
 #define SAFE_RELEASE(p){if (p){(p)->Release();(p)=NULL;}} //定义安全释放宏
 
 //-----------------------------------【全局函数声明部分】-------------------------------------
@@ -47,14 +45,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	wndClass.hCursor = LoadCursor( NULL, IDC_ARROW );    //指定窗口类的光标句柄。
 	wndClass.hbrBackground=(HBRUSH)GetStockObject(GRAY_BRUSH);  //为hbrBackground成员指定一个灰色画刷句柄	
 	wndClass.lpszMenuName = NULL;						//用一个以空终止的字符串，指定菜单资源的名字。
-	wndClass.lpszClassName = L"D3DdemoCore";		//用一个以空终止的字符串，指定窗口类的名字。
+	wndClass.lpszClassName = L"D3Ddemo1";		//用一个以空终止的字符串，指定窗口类的名字。
 
 	//【2】窗口创建四步曲之二：注册窗口类
 	if( !RegisterClassEx( &wndClass ) )				//设计完窗口后，需要对窗口类进行注册，这样才能创建该类型的窗口
 		return -1;		
 
 	//【3】窗口创建四步曲之三：正式创建窗口
-	HWND hwnd = CreateWindow( L"D3DdemoCore",WINDOW_TITLE,		//喜闻乐见的创建窗口函数CreateWindow
+	HWND hwnd = CreateWindow( L"D3Ddemo1",WINDOW_TITLE,		//喜闻乐见的创建窗口函数CreateWindow
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH,
 		WINDOW_HEIGHT, NULL, NULL, hInstance, NULL );
 
@@ -90,7 +88,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	}
 
 	//【6】窗口类的注销
-	UnregisterClass(L"D3DdemoCore", wndClass.hInstance);  //程序准备结束，注销窗口类
+	UnregisterClass(L"D3Ddemo1", wndClass.hInstance);  //程序准备结束，注销窗口类
 	return 0;  
 }
 
@@ -126,17 +124,6 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam 
 //Direct3D_Init
 //Direct3D的初始化
 HRESULT Direct3D_Init(HWND hwnd)
-{
-	if(!(S_OK == Objects_Init(hwnd)))
-		return E_FAIL;
-
-	return S_OK;
-}
-
-
-//Object_Init
-//渲染资源初始化
-HRESULT Objects_Init(HWND hwnd)
 {
 	//1、创建Direct3D接口对象
 	LPDIRECT3D9 pD3D = NULL;
@@ -177,11 +164,19 @@ HRESULT Objects_Init(HWND hwnd)
 	if(FAILED(pD3D->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,hwnd,vp,&d3dpp,&g_pd3dDevice)))
 		return E_FAIL;
 
-	SAFE_RELEASE(pD3D);
+	SAFE_RELEASE(pD3D)
 
 	if(!(S_OK == Objects_Init(hwnd)))
 		return E_FAIL;
 
+	return S_OK;
+}
+
+
+//Object_Init
+//渲染资源初始化
+HRESULT Objects_Init(HWND hwnd)
+{
 	return S_OK;
 }
 
