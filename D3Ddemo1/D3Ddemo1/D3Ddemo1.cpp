@@ -58,6 +58,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH,
 		WINDOW_HEIGHT, NULL, NULL, hInstance, NULL );
 
+	if (S_OK == Direct3D_Init(hwnd))
+	{
+		MessageBox(hwnd,L"初始化完成",L"提示",0);
+	} 
+	else
+	{
+		MessageBox(hwnd,L"初始化失败",L"提示",0);
+	}
+
 	//【4】窗口创建四步曲之四：窗口的移动、显示与更新
 	MoveWindow(hwnd,250,80,WINDOW_WIDTH,WINDOW_HEIGHT,true);		//调整窗口显示时的位置，使窗口左上角位于（250,80）处
 	ShowWindow( hwnd, nShowCmd );    //调用ShowWindow函数来显示窗口
