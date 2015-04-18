@@ -46,6 +46,7 @@ ID3DXFont* g_pFont = NULL; //字体com接口
 float g_FPS = 0.0f;
 wchar_t g_strFPS[50];
 LPDIRECT3DVERTEXBUFFER9 g_pVertexBuffer = NULL; //顶点缓冲区对象
+LPDIRECT3DINDEXBUFFER9 g_pIndexBuffer = NULL; //索引缓存对象
 
 
 
@@ -75,12 +76,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH,
 		WINDOW_HEIGHT, NULL, NULL, hInstance, NULL );
 
-	
+
 	if (!(S_OK == Direct3D_Init(hwnd)))
 	{
 		MessageBox(hwnd,L"初始化失败",L"提示",0);
 	}
-	
+
 
 	//【4】窗口创建四步曲之四：窗口的移动、显示与更新
 	MoveWindow(hwnd,250,80,WINDOW_WIDTH,WINDOW_HEIGHT,true);		//调整窗口显示时的位置，使窗口左上角位于（250,80）处
@@ -198,55 +199,59 @@ HRESULT Objects_Init(HWND hwnd)
 
 	srand(timeGetTime());
 
-	//顶点缓存使用2、创建顶点缓存
-	if (FAILED(g_pd3dDevice->CreateVertexBuffer(6*sizeof(CUSTOMVERTEX),0,D3DFVF_CUSTOMVERTEX,
+	//顶点缓存、索引缓存2、创建顶点缓存和索引缓存
+	//创建顶点缓存
+	if (FAILED(g_pd3dDevice->CreateVertexBuffer(18*sizeof(CUSTOMVERTEX),0,D3DFVF_CUSTOMVERTEX,
 		D3DPOOL_DEFAULT,&g_pVertexBuffer,NULL)))
 	{
 		return E_FAIL;
 	}
 
-	//顶点缓存使用3、访问顶点缓存
-	//顶点数据的设置
-
-	//两个随机三角形
-// 	CUSTOMVERTEX vertices[]=
-// 	{
-// 		{300.0f,100.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-// 		{500.0f,100.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-// 		{300.0f,300.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-// 		{300.0f,300.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-// 
-// 		{(float)(800.0*rand()/RAND_MAX+1.0),(float)(600.0*rand()/(RAND_MAX+1.0)),
-// 		0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-// 
-// 		{(float)(800.0*rand()/RAND_MAX+1.0),(float)(600.0*rand()/(RAND_MAX+1.0)),
-// 		0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-// 	};
-
-	//两个三角形拼成矩形
-	CUSTOMVERTEX vertices[]=
+	//创建索引
+	if(FAILED(g_pd3dDevice->CreateIndexBuffer(48*sizeof(WORD),0,D3DFMT_INDEX16,
+		D3DPOOL_DEFAULT,&g_pIndexBuffer,NULL)))
 	{
-		{300.0f,100.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-		{500.0f,100.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-		{300.0f,200.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-		{500.0f,100.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-		{300.0f,200.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-		{500.0f,200.0f,0.0f,1.0f,D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256),},
-	};
+		return E_FAIL;
+	}
 
+	//顶点缓存、索引缓存使用3、访问顶点缓存
+	//顶点数据的设置
+	CUSTOMVERTEX Vertices[17];
+	Vertices[0].x = 400;
+	Vertices[0].y = 300;
+	Vertices[0].z = 0.0f;
+	Vertices[0].rhw = 1.0f;
+	Vertices[0].color = D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256);
 
+	for (int i=0;i<16;i++)
+	{
+		Vertices[i+1].x = (float)(250*sin(i*3.1415926/8.0))+400;
+		Vertices[i+1].y = (float)(250*cos(i*3.1415926/8.0))+300;
+		Vertices[i+1].z = 0.0f;
+		Vertices[i+1].rhw = 1.0f;
+		Vertices[i+1].color = D3DCOLOR_XRGB(rand()%256,rand()%256,rand()%256);
+	}
+	
 
 	//填充顶点缓冲区
 	VOID* pVertices;
-	if(FAILED(g_pVertexBuffer->Lock(0,sizeof(vertices),(void**)&pVertices,0)))
+	if(FAILED(g_pVertexBuffer->Lock(0,sizeof(Vertices),(void**)&pVertices,0)))
 		return E_FAIL;
-
-	memcpy(pVertices,vertices,sizeof(vertices));
-	
+	memcpy(pVertices,Vertices,sizeof(Vertices));
 	g_pVertexBuffer->Unlock();
 
+	//索引数组的设置
+	WORD Indices[] ={ 0,1,2, 0,2,3, 0,3,4, 0,4,5, 0,5,6, 0,6,7, 0,7,8, 0,8,9, 0,9,10, 0,10,11,
+		0,11,12, 0,12,13, 0,13,14, 0,14,15, 0,15,16, 0,16,1};
+
+	//填充索引数据
+	WORD *pIndex = NULL;
+	g_pIndexBuffer->Lock(0,0,(void**)&pIndex,0);
+	memcpy(pIndex , Indices , sizeof(Indices));
+	g_pIndexBuffer->Unlock();
+
 	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE,false);
-	
+
 
 	return S_OK;
 }
@@ -270,10 +275,11 @@ VOID Direct3D_Render(HWND hwnd)
 
 	g_pd3dDevice->SetRenderState(D3DRS_SHADEMODE,D3DSHADE_GOURAUD);//设置渲染状态
 
-	//顶点缓存使用4、绘制图形
+	//顶点缓存与索引缓存使用4、绘制图形
 	g_pd3dDevice->SetStreamSource(0,g_pVertexBuffer,0,sizeof(CUSTOMVERTEX));
 	g_pd3dDevice->SetFVF(D3DFVF_CUSTOMVERTEX);
-	g_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLELIST,0,2);
+	g_pd3dDevice->SetIndices(g_pIndexBuffer);
+	g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,0,17,0,16);
 
 
 	//显示fps
@@ -295,6 +301,7 @@ VOID Direct3D_Render(HWND hwnd)
 //资源清理
 VOID Direct3D_CleanUp()
 {
+	SAFE_RELEASE(g_pIndexBuffer);
 	SAFE_RELEASE(g_pVertexBuffer);
 	SAFE_RELEASE(g_pFont);
 	SAFE_RELEASE(g_pd3dDevice);
