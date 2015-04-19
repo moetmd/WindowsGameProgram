@@ -28,7 +28,7 @@ struct CUSTOMVERTEX
 	DWORD color;
 };
 
-#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW|D3DFVF_DIFFUSE) //FVF灵活顶点格式
+#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ|D3DFVF_DIFFUSE) //FVF灵活顶点格式
 
 
 
@@ -186,8 +186,7 @@ HRESULT Direct3D_Init(HWND hwnd)
 		if(!(S_OK == Objects_Init(hwnd)))
 			return E_FAIL;
 
-	g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+
 
 	return S_OK;
 }
@@ -266,7 +265,8 @@ HRESULT Objects_Init(HWND hwnd)
 
 	g_pIndexBuffer->Unlock();
 
-
+	g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 	//g_pd3dDevice->SetRenderState(D3DRS_CULLMODE,false);
 
 
