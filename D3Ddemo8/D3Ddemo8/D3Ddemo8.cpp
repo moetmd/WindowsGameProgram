@@ -4,10 +4,15 @@
 #include <d3d9.h>
 #include <windows.h>
 #include <tchar.h>
-#include<D3dx9core.h>
+#include <D3dx9core.h>
+#include <dinput.h>
+#include "D3DUtil.h"
+
 #pragma comment(lib,"winmm.lib")
 #pragma comment(lib,"d3d9.lib")
 #pragma comment(lib,"d3dx9.lib")
+#pragma comment(lib,"dinput8.lib")
+#pragma comment(lib,"dxguid.lib")
 
 
 //-----------------------------------【宏定义部分】--------------------------------------------
@@ -57,7 +62,8 @@ D3DXMATRIX g_WorldMatrix[4],R;
 LPDIRECT3DVERTEXBUFFER9 g_pVertexBuffer = NULL; //顶点缓冲区对象
 LPDIRECT3DINDEXBUFFER9 g_pIndexBuffer = NULL; //索引缓存对象
 
-
+LPDIRECTINPUTDEVICE8 g_pKeyboardDevice = NULL;
+char g_pKeyStateBuffer[256] = {0};
 
 //-----------------------------------【WinMain( )函数】--------------------------------------
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nShowCmd)
