@@ -7,6 +7,7 @@
 #include <D3dx9core.h>
 #include <dinput.h>
 #include "D3DUtil.h"
+#include "DirectInputClass.h"
 
 #pragma comment(lib,"winmm.lib")
 #pragma comment(lib,"d3d9.lib")
@@ -39,31 +40,32 @@ struct CUSTOMVERTEX
 
 //-----------------------------------【全局函数声明部分】-------------------------------------
 LRESULT CALLBACK	WndProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam );  //窗口过程函数
-HRESULT Direct3D_Init(HWND hwnd);
-HRESULT Objects_Init(HWND hwnd);
-VOID Direct3D_Render(HWND hwnd);
-VOID Direct3D_CleanUp();
-float Get_FPS();
-VOID Matrix_Set();
-VOID Light_Set(LPDIRECT3DDEVICE9 pd3dDevice, UINT nType);
+HRESULT             Direct3D_Init(HWND hwnd);
+HRESULT             Objects_Init(HWND hwnd);
+VOID                Direct3D_Render(HWND hwnd);
+VOID                Direct3D_CleanUp();
+VOID                Direct3D_Update(HWND hwnd);
+float               Get_FPS();
+VOID                Matrix_Set();
+VOID                Light_Set(LPDIRECT3DDEVICE9 pd3dDevice, UINT nType);
 
 //-----------------------------------【全局变量声明部分】-------------------------------------
-LPDIRECT3DDEVICE9       g_pd3dDevice = NULL; //Direct3D设备对象
-ID3DXFont* g_pFont = NULL; //字体com接口
-float g_FPS = 0.0f;
-wchar_t g_strFPS[50];
+LPDIRECT3DDEVICE9	g_pd3dDevice            = NULL;  //Direct3D设备对象
+LPD3DXFONT			g_pTextFPS				= NULL;  //字体COM接口
+LPD3DXFONT			g_pTextAdaperName       = NULL;  // 显卡信息的2D文本
+LPD3DXFONT			g_pTextHelper           = NULL;  // 帮助信息的2D文本
+LPD3DXFONT			g_pTextInfor            = NULL;  // 绘制信息的2D文本
+float				g_FPS					= 0.0f;  //一个浮点型的变量，代表帧速率
+wchar_t				g_strFPS[50]            = {0};   //包含帧速率的字符数组
+wchar_t				g_strAdapterName[60]    = {0};   //包含显卡名称的字符数组
+D3DXMATRIX			g_matWorld;                      //世界矩阵
+DInputClass*  	    g_pDInput               = NULL;  //一个DInputClass类的指针
 
-LPD3DXMESH g_teapot = NULL;
-LPD3DXMESH g_cube = NULL;
-LPD3DXMESH g_sphere = NULL;
-LPD3DXMESH g_torus = NULL;
-D3DXMATRIX g_WorldMatrix[4],R;
+LPD3DXMESH          g_pMesh                 = NULL;  // 网格的对象
+D3DMATERIAL9*       g_pMaterials            = NULL;  // 网格的材质信息
+LPDIRECT3DTEXTURE9* g_pTextures             = NULL;  // 网格的纹理信息
+DWORD               g_dwNumMtrls            = 0;     // 材质的数目
 
-LPDIRECT3DVERTEXBUFFER9 g_pVertexBuffer = NULL; //顶点缓冲区对象
-LPDIRECT3DINDEXBUFFER9 g_pIndexBuffer = NULL; //索引缓存对象
-
-LPDIRECTINPUTDEVICE8 g_pKeyboardDevice = NULL;
-char g_pKeyStateBuffer[256] = {0};
 
 //-----------------------------------【WinMain( )函数】--------------------------------------
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nShowCmd)
@@ -106,6 +108,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	//PlaySound(L"",NULL,SND_FILENAME | SND_ASYNC | SND_LOOP);
 	//MessageBox(hwnd,L"",L"",0);
 
+	//DirectInput类的初始化
+	g_pDInput = new DInputClass();
+	g_pDInput->Init(hwnd,hInstance,DISCL_FOREGROUND | DISCL_NONEXCLUSIVE, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+
+
+
 	//【5】消息循环过程
 	MSG msg = { 0 };		//定义并初始化msg
 	while( msg.message != WM_QUIT )			//使用while循环，如果消息不是WM_QUIT消息，就继续循环
@@ -116,7 +124,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 			DispatchMessage( &msg );			//分发一个消息给窗口程序。
 		}else
 		{
-			Direct3D_Render(hwnd);
+			Direct3D_Update(hwnd);         //对设备输入（键盘鼠标）进行响应
+			Direct3D_Render(hwnd);         //渲染
 		}
 	}
 
@@ -195,13 +204,20 @@ HRESULT Direct3D_Init(HWND hwnd)
 	if(FAILED(pD3D->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,hwnd,vp,&d3dpp,&g_pd3dDevice)))
 		return E_FAIL;
 
+	//获取显卡信息到g_strAdapterName中，并在显卡名称之前加上“当前显卡型号：”字符串
+	wchar_t TempName[60]=L"当前显卡型号：";   //定义一个临时字符串，且方便了把"当前显卡型号："字符串引入我们的目的字符串中
+	D3DADAPTER_IDENTIFIER9 Adapter;  //定义一个D3DADAPTER_IDENTIFIER9结构体，用于存储显卡信息
+	pD3D->GetAdapterIdentifier(0,0,&Adapter);//调用GetAdapterIdentifier，获取显卡信息
+	int len = MultiByteToWideChar(CP_ACP,0, Adapter.Description, -1, NULL, 0);//显卡名称现在已经在Adapter.Description中了，但是其为char类型，我们要将其转为wchar_t类型
+	MultiByteToWideChar(CP_ACP, 0, Adapter.Description, -1, g_strAdapterName, len);//这步操作完成后，g_strAdapterName中就为当前我们的显卡类型名的wchar_t型字符串了
+	wcscat_s(TempName,g_strAdapterName);//把当前我们的显卡名加到“当前显卡型号：”字符串后面，结果存在TempName中
+	wcscpy_s(g_strAdapterName,TempName);//把TempName中的结果拷贝到全局变量g_strAdapterName中
+
+
 	SAFE_RELEASE(pD3D)
-
-		if(!(S_OK == Objects_Init(hwnd)))
-			return E_FAIL;
-
-
-
+    
+	if(!(S_OK == Objects_Init(hwnd)))
+		return E_FAIL;
 	return S_OK;
 }
 
@@ -210,37 +226,44 @@ HRESULT Direct3D_Init(HWND hwnd)
 //渲染资源初始化
 HRESULT Objects_Init(HWND hwnd)
 {
-	if(FAILED(D3DXCreateFont(g_pd3dDevice,36,0,0,1,FALSE,DEFAULT_CHARSET,
-		OUT_DEFAULT_PRECIS,DEFAULT_QUALITY,0,_T("微软雅黑"),&g_pFont)))
-		return E_FAIL;
 
-	srand(timeGetTime());
+	//创建字体
+	D3DXCreateFont(g_pd3dDevice, 36, 0, 0, 1000, false, DEFAULT_CHARSET, 
+		OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, 0, _T("Calibri"), &g_pTextFPS);
+	D3DXCreateFont(g_pd3dDevice, 20, 0, 1000, 0, false, DEFAULT_CHARSET, 
+		OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, 0, L"华文中宋", &g_pTextAdaperName); 
+	D3DXCreateFont(g_pd3dDevice, 23, 0, 1000, 0, false, DEFAULT_CHARSET, 
+		OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, 0, L"微软雅黑", &g_pTextHelper); 
+	D3DXCreateFont(g_pd3dDevice, 26, 0, 1000, 0, false, DEFAULT_CHARSET, 
+		OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, 0, L"黑体", &g_pTextInfor); 
 
-	if(FAILED(D3DXCreateBox(g_pd3dDevice,2,2,2,&g_cube,NULL)))
-		return false;
-	if(FAILED(D3DXCreateTeapot(g_pd3dDevice,&g_teapot,NULL)))
-		return false;
-	if(FAILED(D3DXCreateSphere(g_pd3dDevice,1.5,25,25,&g_sphere,NULL)))
-		return false;
-	if(FAILED(D3DXCreateTorus(g_pd3dDevice,0.5f,1.2f,25,25,&g_torus,NULL)))
-		return false;
+	// 从X文件中加载网格数据
+	LPD3DXBUFFER pAdjBuffer  = NULL;
+	LPD3DXBUFFER pMtrlBuffer = NULL;
+	D3DXLoadMeshFromX(L"loli.x", D3DXMESH_MANAGED, g_pd3dDevice, 
+		&pAdjBuffer, &pMtrlBuffer, NULL, &g_dwNumMtrls, &g_pMesh);
 
-	D3DMATERIAL9 mtrl;
-	::ZeroMemory(&mtrl,sizeof(mtrl));
-	mtrl.Ambient = D3DXCOLOR(0.5f,0.5f,0.7f,1.0f);
-	mtrl.Diffuse = D3DXCOLOR(0.6f,0.6f,0.6f,1.0f);
-	mtrl.Specular = D3DXCOLOR(0.3f,0.3f,0.3f,0.3f);
-	mtrl.Emissive = D3DXCOLOR(0.3f,0.0f,0.1f,1.0f);
-	g_pd3dDevice->SetMaterial(&mtrl);
+	// 读取材质和纹理数据
+	D3DXMATERIAL *pMtrls = (D3DXMATERIAL*)pMtrlBuffer->GetBufferPointer();
+	g_pMaterials = new D3DMATERIAL9[g_dwNumMtrls];
+	g_pTextures  = new LPDIRECT3DTEXTURE9[g_dwNumMtrls];
 
-	Light_Set(g_pd3dDevice,1);
+	for (DWORD i=0; i<g_dwNumMtrls; i++) 
+	{
+		g_pMaterials[i] = pMtrls[i].MatD3D;
+		g_pMaterials[i].Ambient = g_pMaterials[i].Diffuse;
+		g_pTextures[i]  = NULL;
+		D3DXCreateTextureFromFileA(g_pd3dDevice, pMtrls[i].pTextureFilename, &g_pTextures[i]);
+	}
+	pAdjBuffer->Release();
+	pMtrlBuffer->Release();
+	
+	// 设置渲染状态
+	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);   //开启背面消隐
+	g_pd3dDevice->SetRenderState(D3DRS_AMBIENT, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f)); //设置环境光
 
-	g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, TRUE);
-	g_pd3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
-	g_pd3dDevice->SetRenderState(D3DRS_SPECULARENABLE, TRUE);
-	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-	//g_pd3dDevice->SetRenderState(D3DRS_FILLMODE,D3DFILL_WIREFRAME);
-	//g_pd3dDevice->SetRenderState(D3DRS_CULLMODE,false);
+	Matrix_Set();//设置四大变换
+	
 
 
 	return S_OK;
@@ -252,7 +275,7 @@ HRESULT Objects_Init(HWND hwnd)
 VOID Direct3D_Render(HWND hwnd)
 {
 	//1、清屏
-	g_pd3dDevice->Clear(0,NULL,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER,D3DCOLOR_XRGB(0,0,0),1.0f,0);
+	g_pd3dDevice->Clear(0,NULL,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER,D3DCOLOR_XRGB(10,10,10),1.0f,0);
 
 	RECT formatRect;
 	GetClientRect(hwnd,&formatRect);
@@ -263,48 +286,51 @@ VOID Direct3D_Render(HWND hwnd)
 
 	//3、正式绘制
 
-	//顶点缓存与索引缓存使用4、绘制图形
-	Matrix_Set();
+	// 绘制网格
+	for (DWORD i = 0; i < g_dwNumMtrls; i++)
+	{
+		g_pd3dDevice->SetMaterial(&g_pMaterials[i]);
+		g_pd3dDevice->SetTexture(0, g_pTextures[i]);
+		g_pMesh->DrawSubset(i);
+	}
 
-	if (::GetAsyncKeyState(0x31) & 0x8000f)
-		g_pd3dDevice->SetRenderState(D3DRS_FILLMODE,D3DFILL_WIREFRAME);
-	if (::GetAsyncKeyState(0x32) & 0x8000f)
-		g_pd3dDevice->SetRenderState(D3DRS_FILLMODE,D3DFILL_SOLID);
+	//在窗口右上角处，显示每秒帧数
+	int charCount = swprintf_s(g_strFPS, 20, _T("FPS:%0.3f"), Get_FPS() );
+	g_pTextFPS->DrawText(NULL, g_strFPS, charCount , &formatRect, DT_TOP | DT_RIGHT, D3DCOLOR_RGBA(0,239,136,255));
 
-	if (::GetAsyncKeyState(0x51) & 0x8000f)
-		Light_Set(g_pd3dDevice,1);
-	if (::GetAsyncKeyState(0x57) & 0x8000f)
-		Light_Set(g_pd3dDevice,2);
-	if (::GetAsyncKeyState(0x45) & 0x8000f)
-		Light_Set(g_pd3dDevice,3);
+	//显示显卡类型名
+	g_pTextAdaperName->DrawText(NULL,g_strAdapterName, -1, &formatRect, 
+		DT_TOP | DT_LEFT, D3DXCOLOR(1.0f, 0.5f, 0.0f, 1.0f));
 
-	D3DXMatrixRotationY(&R,::timeGetTime()/1440.0f);
+	// 输出绘制信息
+	formatRect.top = 30;
+	static wchar_t strInfo[256] = {0};
+	swprintf_s(strInfo,-1, L"模型坐标: (%.2f, %.2f, %.2f)", g_matWorld._41, g_matWorld._42, g_matWorld._43);
+	g_pTextHelper->DrawText(NULL, strInfo, -1, &formatRect,
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(135,239,136,255));
 
-	D3DXMatrixTranslation(&g_WorldMatrix[0],3.0f,-3.0f,0.0f);
-	g_WorldMatrix[0] = g_WorldMatrix[0]*R;
-	g_pd3dDevice->SetTransform(D3DTS_WORLD,&g_WorldMatrix[0]);
-	g_cube->DrawSubset(0);
-
-	D3DXMatrixTranslation(&g_WorldMatrix[1],-3.0f,-3.0f,0.0f);
-	g_WorldMatrix[1] = g_WorldMatrix[1]*R;
-	g_pd3dDevice->SetTransform(D3DTS_WORLD,&g_WorldMatrix[1]);
-	g_teapot->DrawSubset(0);
-
-	D3DXMatrixTranslation(&g_WorldMatrix[2],3.0f,3.0f,0.0f);
-	g_WorldMatrix[2] = g_WorldMatrix[2]*R;
-	g_pd3dDevice->SetTransform(D3DTS_WORLD,&g_WorldMatrix[2]);
-	g_sphere->DrawSubset(0);
-
-	D3DXMatrixTranslation(&g_WorldMatrix[3],-3.0f,3.0f,0.0f);
-	g_WorldMatrix[3] = g_WorldMatrix[3]*R;
-	g_pd3dDevice->SetTransform(D3DTS_WORLD,&g_WorldMatrix[3]);
-	g_torus->DrawSubset(0);
-
-	//显示fps
-	int charCount = swprintf_s(g_strFPS,20,_T("FPS:%0.3f"),Get_FPS());
-	g_pFont->DrawText(NULL,g_strFPS,charCount,&formatRect,DT_TOP|DT_RIGHT,D3DCOLOR_XRGB(255,30,100));
-
-
+	// 输出帮助信息
+	formatRect.left = 0,formatRect.top = 380;
+	g_pTextInfor->DrawText(NULL, L"控制说明:", -1, &formatRect, 
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(235,123,230,255));
+	formatRect.top += 35;
+	g_pTextHelper->DrawText(NULL, L"    按住鼠标左键并拖动：平移模型", -1, &formatRect, 
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(255,200,0,255));
+	formatRect.top += 25;
+	g_pTextHelper->DrawText(NULL, L"    按住鼠标右键并拖动：旋转模型", -1, &formatRect, 
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(255,200,0,255));
+	formatRect.top += 25;
+	g_pTextHelper->DrawText(NULL, L"    滑动鼠标滚轮：拉伸模型", -1, &formatRect, 
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(255,200,0,255));
+	formatRect.top += 25;
+	g_pTextHelper->DrawText(NULL, L"    W、S、A、D键：平移模型 ", -1, &formatRect, 
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(255,200,0,255));
+	formatRect.top += 25;
+	g_pTextHelper->DrawText(NULL, L"    上、下、左、右方向键：旋转模型 ", -1, &formatRect, 
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(255,200,0,255));
+	formatRect.top += 25;
+	g_pTextHelper->DrawText(NULL, L"    ESC键 : 退出程序", -1, &formatRect, 
+		DT_SINGLELINE | DT_NOCLIP | DT_LEFT, D3DCOLOR_RGBA(255,200,0,255));
 
 
 
@@ -315,18 +341,67 @@ VOID Direct3D_Render(HWND hwnd)
 	g_pd3dDevice->Present(NULL,NULL,NULL,NULL);
 }
 
+//Direct3D_Update
+void Direct3D_Update(HWND hwnd)
+{
+	g_pDInput->GetInput();
+
+	//按住鼠标左键拖动，平移操作
+	static FLOAT fPosX = 0.0f, fPosY = 0.0f, fPosZ = 0.0f;
+
+	if (g_pDInput->IsMouseButtonDown(0))
+	{
+		fPosX += (g_pDInput->MouseDX())*0.08f;
+		fPosY += (g_pDInput->MouseDY())*-0.08f;
+	}
+
+	//鼠标滚轮，视点收缩
+	fPosZ += (g_pDInput->MouseDZ())*0.02f;
+
+	//平移物体
+	if(g_pDInput->IsKeyDown(DIK_A)) fPosX -= 0.005f;
+	if(g_pDInput->IsKeyDown(DIK_D)) fPosX += 0.005f;
+	if(g_pDInput->IsKeyDown(DIK_W)) fPosY += 0.005f;
+	if(g_pDInput->IsKeyDown(DIK_S)) fPosY -= 0.005f;
+
+	D3DXMatrixTranslation(&g_matWorld,fPosX,fPosY,fPosZ);
+
+	//按住鼠标右键，旋转操作
+	static float fAngleX = 0.0f, fAngleY = 0.0f;
+
+	if(g_pDInput->IsMouseButtonDown(1))
+	{
+		fAngleX += (g_pDInput->MouseDY())*-0.001f;
+		fAngleY += (g_pDInput->MouseDY())*-0.001f;
+	}
+
+	//旋转物体
+	if(g_pDInput->IsKeyDown(DIK_UP)) fAngleX += 0.005f;
+	if(g_pDInput->IsKeyDown(DIK_DOWN)) fAngleX -= 0.005f;
+	if(g_pDInput->IsKeyDown(DIK_LEFT)) fAngleY -= 0.005f;
+	if(g_pDInput->IsKeyDown(DIK_RIGHT)) fAngleY += 0.005f;
+
+
+	D3DXMATRIX Rx,Ry;
+	D3DXMatrixRotationX(&Rx,fAngleX);
+	D3DXMatrixRotationY(&Ry,fAngleY);
+
+	//最终矩阵
+	g_matWorld = Rx * Ry * g_matWorld;//最终的矩阵
+	g_pd3dDevice->SetTransform(D3DTS_WORLD,&g_matWorld);//设置世界矩阵
+
+}
+
 //Direct3D_CleanUp
 //资源清理
 VOID Direct3D_CleanUp()
 {
-	SAFE_RELEASE(g_torus);
-	SAFE_RELEASE(g_sphere);
-	SAFE_RELEASE(g_cube);
-	SAFE_RELEASE(g_teapot)
-		SAFE_RELEASE(g_pIndexBuffer);
-	SAFE_RELEASE(g_pVertexBuffer);
-	SAFE_RELEASE(g_pFont);
-	SAFE_RELEASE(g_pd3dDevice);
+	//释放COM接口对象
+	SAFE_RELEASE(g_pTextAdaperName)
+	SAFE_RELEASE(g_pTextHelper)
+	SAFE_RELEASE(g_pTextInfor)
+	SAFE_RELEASE(g_pTextFPS)
+	SAFE_RELEASE(g_pd3dDevice)
 }
 
 //Get_FPS()  用于计算FPS
@@ -353,21 +428,11 @@ float Get_FPS()
 VOID Matrix_Set()
 {
 	//1世界变换
-	D3DXMATRIX matWorld, Rx, Ry, Rz;
-	D3DXMatrixIdentity(&matWorld);
-	D3DXMatrixRotationX(&Rx,D3DX_PI * (::timeGetTime()/1000.0f));
-
-	D3DXMatrixRotationY(&Rx,D3DX_PI * (::timeGetTime()/1000.0f/2));
-
-	D3DXMatrixRotationZ(&Rx,D3DX_PI * (::timeGetTime()/1000.0f/3));
-
-	matWorld = Rx * Ry * Rz * matWorld;
-	g_pd3dDevice->SetTransform(D3DTS_WORLD,&matWorld);
 
 
 	//2取景变换
 	D3DXMATRIX matView;
-	D3DXVECTOR3 vEye(0.0f, 0.0f, -15.0f);
+	D3DXVECTOR3 vEye(0.0f, 0.0f, 300.0f);
 	D3DXVECTOR3 vAt(0.0f, 0.0f, 0.0f);
 	D3DXVECTOR3 vUp(0.0f, 1.0f, 0.0f);
 	D3DXMatrixLookAtLH(&matView, &vEye, &vAt, &vUp);
@@ -376,7 +441,8 @@ VOID Matrix_Set()
 
 	//3投影变换
 	D3DXMATRIX matProj;
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI/4.0f, 1.0f, 1.0f, 1000.0f);
+	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f,
+		(float)((double)WINDOW_WIDTH/WINDOW_HEIGHT),1.0f, 10000.0f);
 	g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &matProj);
 
 
@@ -443,3 +509,5 @@ VOID Light_Set(LPDIRECT3DDEVICE9 pd3dDevice, UINT nTpye)
 	g_pd3dDevice->LightEnable(0,TRUE);
 	g_pd3dDevice->SetRenderState(D3DRS_AMBIENT,D3DCOLOR_XRGB(36,36,36));
 }
+
+
