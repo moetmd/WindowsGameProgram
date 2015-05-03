@@ -21,7 +21,7 @@
 //------------------------------------------------------------------------------------------------
 #define WINDOW_WIDTH	800							//为窗口宽度定义的宏，以方便在此处修改窗口宽度
 #define WINDOW_HEIGHT	600							//为窗口高度定义的宏，以方便在此处修改窗口高度
-#define WINDOW_TITLE	L"D3Ddemo10"		//为窗口标题定义的宏
+#define WINDOW_TITLE	L"D3Ddemo13"		//为窗口标题定义的宏
 #define SAFE_RELEASE(p){if (p){(p)->Release();(p)=NULL;}} //定义安全释放宏
 
 
@@ -90,14 +90,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	wndClass.hCursor       = LoadCursor( NULL, IDC_ARROW );       //指定窗口类的光标句柄。
 	wndClass.hbrBackground = (HBRUSH)GetStockObject(GRAY_BRUSH);  //为hbrBackground成员指定一个灰色画刷句柄	
 	wndClass.lpszMenuName  = NULL;						          //用一个以空终止的字符串，指定菜单资源的名字。
-	wndClass.lpszClassName = L"D3Ddemo10";		                  //用一个以空终止的字符串，指定窗口类的名字。
+	wndClass.lpszClassName = L"D3Ddemo13";		                  //用一个以空终止的字符串，指定窗口类的名字。
 
 	//【2】窗口创建四步曲之二：注册窗口类
 	if( !RegisterClassEx( &wndClass ) )				        //设计完窗口后，需要对窗口类进行注册，这样才能创建该类型的窗口
 		return -1;		
 
 	//【3】窗口创建四步曲之三：正式创建窗口
-	HWND hwnd = CreateWindow( L"D3Ddemo10",WINDOW_TITLE,	//喜闻乐见的创建窗口函数CreateWindow
+	HWND hwnd = CreateWindow( L"D3Ddemo13",WINDOW_TITLE,	//喜闻乐见的创建窗口函数CreateWindow
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH,
 		WINDOW_HEIGHT, NULL, NULL, hInstance, NULL );
 
@@ -138,7 +138,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	}
 
 	//【6】窗口类的注销
-	UnregisterClass(L"D3Ddemo10", wndClass.hInstance);  //程序准备结束，注销窗口类
+	UnregisterClass(L"D3Ddemo13", wndClass.hInstance);  //程序准备结束，注销窗口类
 	return 0;  
 }
 
@@ -245,116 +245,80 @@ HRESULT Objects_Init(HWND hwnd)
 	D3DXCreateFont(g_pd3dDevice, 26, 0, 1000, 0, false, DEFAULT_CHARSET, 
 		OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, 0, L"黑体", &g_pTextInfor); 
 
-	//创建顶点缓存
-	if(FAILED( g_pd3dDevice->CreateVertexBuffer(24*sizeof(CUSTOMVERTEX),0,D3DFVF_CUSTOMVERTEX,
-		D3DPOOL_DEFAULT,&g_pVertexBuffer,NULL)))
-		return E_FAIL;
-
-	//创建索引缓存
-	if(FAILED( g_pd3dDevice->CreateIndexBuffer(36*sizeof(WORD),0,D3DFMT_INDEX16,D3DPOOL_DEFAULT,
-		&g_pIndexBuffer,NULL)))
-		return E_FAIL;
-
-	//填充顶点缓存
-	CUSTOMVERTEX* pVertices;
 	
-	if(FAILED(g_pVertexBuffer->Lock(0,24*sizeof(CUSTOMVERTEX),(void**)&pVertices,0)))
-		return E_FAIL;
+	//从x文件加载网格数据
+	LPD3DXBUFFER pAdjBuffer = NULL;
+	LPD3DXBUFFER pMtrlBuffer = NULL;
 
-	// 正面顶点数据
-	pVertices[0] = CUSTOMVERTEX(-10.0f,  10.0f, -10.0f, 0.0f, 0.0f);
-	pVertices[1] = CUSTOMVERTEX( 10.0f,  10.0f, -10.0f, 1.0f, 0.0f);
-	pVertices[2] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 1.0f, 1.0f);
-	pVertices[3] = CUSTOMVERTEX(-10.0f, -10.0f, -10.0f, 0.0f, 1.0f);
+	D3DXLoadMeshFromX(L"miki.x",D3DXMESH_MANAGED,g_pd3dDevice,&pAdjBuffer,&pMtrlBuffer,
+		NULL,&g_dwNumMtrls,&g_pMesh);
 
-	// 背面顶点数据
-	pVertices[4] = CUSTOMVERTEX( 10.0f,  10.0f, 10.0f, 0.0f, 0.0f);
-	pVertices[5] = CUSTOMVERTEX(-10.0f,  10.0f, 10.0f, 1.0f, 0.0f);
-	pVertices[6] = CUSTOMVERTEX(-10.0f, -10.0f, 10.0f, 1.0f, 1.0f);
-	pVertices[7] = CUSTOMVERTEX( 10.0f, -10.0f, 10.0f, 0.0f, 1.0f);
+	//读取材质和纹理数据
+	D3DXMATERIAL *pMtrls = (D3DXMATERIAL *)pMtrlBuffer->GetBufferPointer();
+	g_pMaterials = new D3DMATERIAL9[g_dwNumMtrls];
+	g_pTextures = new LPDIRECT3DTEXTURE9[g_dwNumMtrls];
 
-	// 顶面顶点数据
-	pVertices[8]  = CUSTOMVERTEX(-10.0f, 10.0f,  10.0f, 0.0f, 0.0f);
-	pVertices[9]  = CUSTOMVERTEX( 10.0f, 10.0f,  10.0f, 1.0f, 0.0f);
-	pVertices[10] = CUSTOMVERTEX( 10.0f, 10.0f, -10.0f, 1.0f, 1.0f);
-	pVertices[11] = CUSTOMVERTEX(-10.0f, 10.0f, -10.0f, 0.0f, 1.0f);
-
-	// 底面顶点数据
-	pVertices[12] = CUSTOMVERTEX(-10.0f, -10.0f, -10.0f, 0.0f, 0.0f);
-	pVertices[13] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 1.0f, 0.0f);
-	pVertices[14] = CUSTOMVERTEX( 10.0f, -10.0f,  10.0f, 1.0f, 1.0f);
-	pVertices[15] = CUSTOMVERTEX(-10.0f, -10.0f,  10.0f, 0.0f, 1.0f);
-
-	// 左侧面顶点数据
-	pVertices[16] = CUSTOMVERTEX(-10.0f,  10.0f,  10.0f, 0.0f, 0.0f);
-	pVertices[17] = CUSTOMVERTEX(-10.0f,  10.0f, -10.0f, 1.0f, 0.0f);
-	pVertices[18] = CUSTOMVERTEX(-10.0f, -10.0f, -10.0f, 1.0f, 1.0f);
-	pVertices[19] = CUSTOMVERTEX(-10.0f, -10.0f,  10.0f, 0.0f, 1.0f);
-
-	// 右侧面顶点数据
-	pVertices[20] = CUSTOMVERTEX( 10.0f,  10.0f, -10.0f, 0.0f, 0.0f);
-	pVertices[21] = CUSTOMVERTEX( 10.0f,  10.0f,  10.0f, 1.0f, 0.0f);
-	pVertices[22] = CUSTOMVERTEX( 10.0f, -10.0f,  10.0f, 1.0f, 1.0f);
-	pVertices[23] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 0.0f, 1.0f);
+	for (DWORD i=0;i<g_dwNumMtrls;i++)
+	{
+		//获取材质并设置环境光颜色
+		g_pMaterials[i] = pMtrls[i].MatD3D;
+		g_pMaterials[i].Ambient = g_pMaterials[i].Diffuse;
 
 
-	g_pVertexBuffer->Unlock();
 
-	//填充索引数据
-	WORD *pIndices = NULL;
-	g_pIndexBuffer->Lock(0,0,(void**)&pIndices,0);
+		//创建纹理对象
+		g_pTextures[i] = NULL;
+		//D3DXCreateTextureFromFileA(g_pd3dDevice,pMtrls[i].pTextureFilename,&g_pTextures[i]);
+	}
 
-	// 正面索引数据
-	pIndices[0] = 0; pIndices[1] = 1; pIndices[2] = 2;
-	pIndices[3] = 0; pIndices[4] = 2; pIndices[5] = 3;
-
-	// 背面索引数据
-	pIndices[6] = 4; pIndices[7]  = 5; pIndices[8]  = 6;
-	pIndices[9] = 4; pIndices[10] = 6; pIndices[11] = 7;
-
-	// 顶面索引数据
-	pIndices[12] = 8; pIndices[13] =  9; pIndices[14] = 10;
-	pIndices[15] = 8; pIndices[16] = 10; pIndices[17] = 11;
-
-	// 底面索引数据
-	pIndices[18] = 12; pIndices[19] = 13; pIndices[20] = 14;
-	pIndices[21] = 12; pIndices[22] = 14; pIndices[23] = 15;
-
-	// 左侧面索引数据
-	pIndices[24] = 16; pIndices[25] = 17; pIndices[26] = 18;
-	pIndices[27] = 16; pIndices[28] = 18; pIndices[29] = 19;
-
-	// 右侧面索引数据
-	pIndices[30] = 20; pIndices[31] = 21; pIndices[32] = 22;
-	pIndices[33] = 20; pIndices[34] = 22; pIndices[35] = 23;
-
-	g_pIndexBuffer->Unlock();
-
-	//创建纹理
-	D3DXCreateTextureFromFile(g_pd3dDevice,L"pal5q.jpg",&g_pTexture);
-
-	//设置材质
-	D3DMATERIAL9 mtrl;
-	::ZeroMemory(&mtrl,sizeof(mtrl));
-	mtrl.Ambient = D3DXCOLOR(1.0f,1.0f,1.0f,1.0f);
-	mtrl.Diffuse = D3DXCOLOR(1.0f,1.0f,1.0f,1.0f);
-	mtrl.Specular= D3DXCOLOR(1.0f,1.0f,1.0f,1.0f);
-	g_pd3dDevice->SetMaterial(&mtrl);
-
+	SAFE_RELEASE(pAdjBuffer);
+	SAFE_RELEASE(pMtrlBuffer);
+	
+	//设置光照
 	D3DLIGHT9 light;
 	::ZeroMemory(&light,sizeof(light));
-	light.Type  = D3DLIGHT_DIRECTIONAL;
-	light.Ambient = D3DXCOLOR(1.0f,1.0f,1.0f,1.0f);
+	light.Type = D3DLIGHT_DIRECTIONAL;
+	light.Ambient = D3DXCOLOR(0.5f,0.5f,0.5f,1.0f);
 	light.Diffuse = D3DXCOLOR(1.0f,1.0f,1.0f,1.0f);
 	light.Specular = D3DXCOLOR(0.0f,0.0f,0.0f,1.0f);
-	light.Direction = D3DXVECTOR3(1.0f,1.0f,0.0f);
+	light.Direction = D3DXVECTOR3(1.0f,0.0f,1.0f);
 	g_pd3dDevice->SetLight(0,&light);
 	g_pd3dDevice->LightEnable(0,true);
+	g_pd3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS,true);
+	g_pd3dDevice->SetRenderState(D3DRS_SPECULARENABLE, true);
+
 	
 	// 设置渲染状态
-	g_pd3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS,true);   //初始化顶点法线
+	//g_pd3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS,true);   //初始化顶点法线
 	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);   //开启背面消隐
-	g_pd3dDevice->SetRenderState(D3DRS_AMBIENT, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f)); //设置环境光
+	//g_pd3dDevice->SetRenderState(D3DRS_AMBIENT, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f)); //设置环境光
+	g_pd3dDevice->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESS);//深度测试函数设置
+	g_pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE,true);//深度测试成功后更新缓存
+
+	//各项异性过滤
+	g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAXANISOTROPY,3);
+	g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAGFILTER,D3DTEXF_ANISOTROPIC);
+	g_pd3dDevice->SetSamplerState(0,D3DSAMP_MINFILTER,D3DTEXF_ANISOTROPIC);
+
+	//线性纹理过滤
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAGFILTER,D3DTEXF_LINEAR);
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MINFILTER,D3DTEXF_LINEAR);
+
+	//最近点采样过滤
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAGFILTER,D3DTEXF_POINT);
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MINFILTER,D3DTEXF_POINT);
+
+	//渐进纹理过滤
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MIPFILTER,D3DTEXF_LINEAR);
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAXMIPLEVEL,16);
+
+	//开启alpha融合
+	g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE,true);
+		//设置融合因子
+	g_pd3dDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
+	g_pd3dDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+		//设置融合运算方式
+	g_pd3dDevice->SetRenderState(D3DRS_BLENDOP,D3DBLENDOP_ADD);
 
 	Matrix_Set();//设置四大变换
 	
@@ -379,12 +343,13 @@ VOID Direct3D_Render(HWND hwnd)
 
 
 	//3、正式绘制
-
-	g_pd3dDevice->SetStreamSource(0,g_pVertexBuffer,0,sizeof(CUSTOMVERTEX));
-	g_pd3dDevice->SetFVF(D3DFVF_CUSTOMVERTEX);
-	g_pd3dDevice->SetIndices(g_pIndexBuffer);
-	g_pd3dDevice->SetTexture(0,g_pTexture);
-	g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,0,24,0,12);
+	for (DWORD i=0;i<g_dwNumMtrls;i++)
+	{
+		g_pd3dDevice->SetMaterial(&g_pMaterials[i]);
+		g_pd3dDevice->SetTexture(0,g_pTextures[i]);
+		g_pMesh->DrawSubset(i);
+	}
+	
 
 	//在窗口右上角处，显示每秒帧数
 	int charCount = swprintf_s(g_strFPS, 20, _T("FPS:%0.3f"), Get_FPS() );
@@ -437,6 +402,51 @@ VOID Direct3D_Render(HWND hwnd)
 void Direct3D_Update(HWND hwnd)
 {
 	g_pDInput->GetInput();
+
+	//设置纹理寻址方式
+	if (g_pDInput->IsKeyDown(DIK_1))
+	{
+		//重复纹理寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_WRAP);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_WRAP);
+	}
+	if (g_pDInput->IsKeyDown(DIK_2))
+	{
+		//镜像寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_MIRROR);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_MIRROR);
+	}
+	if (g_pDInput->IsKeyDown(DIK_3))
+	{
+		//夹取纹理寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_CLAMP);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_CLAMP);
+	}
+	if (g_pDInput->IsKeyDown(DIK_4))
+	{
+		//边框纹理寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_BORDER);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_BORDER);
+	}
+
+	//通过5、6按键控制漫反射alpha分量的变化
+	if (g_pDInput->IsKeyDown(DIK_5))
+	{
+		for (DWORD i=0;i<g_dwNumMtrls;i++)
+		{
+			g_pMaterials[i].Diffuse.a += 0.001f;
+		}
+	}
+	if (g_pDInput->IsKeyDown(DIK_6))
+	{
+		for (DWORD i=0;i<g_dwNumMtrls;i++)
+		{
+			g_pMaterials[i].Diffuse.a -= 0.001f;
+		}
+	}
+
+
+
 
 	//按住鼠标左键拖动，平移操作
 	static FLOAT fPosX = 0.0f, fPosY = 0.0f, fPosZ = 0.0f;
@@ -528,7 +538,7 @@ VOID Matrix_Set()
 
 	//2取景变换
 	D3DXMATRIX matView;
-	D3DXVECTOR3 vEye(0.0f, 0.0f, -50.0f);
+	D3DXVECTOR3 vEye(0.0f, 0.0f, -300.0f);
 	D3DXVECTOR3 vAt(0.0f, 0.0f, 0.0f);
 	D3DXVECTOR3 vUp(0.0f, 1.0f, 0.0f);
 	D3DXMatrixLookAtLH(&matView, &vEye, &vAt, &vUp);

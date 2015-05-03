@@ -263,27 +263,27 @@ HRESULT Objects_Init(HWND hwnd)
 
 	// 正面顶点数据
 	pVertices[0] = CUSTOMVERTEX(-10.0f,  10.0f, -10.0f, 0.0f, 0.0f);
-	pVertices[1] = CUSTOMVERTEX( 10.0f,  10.0f, -10.0f, 1.0f, 0.0f);
-	pVertices[2] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 1.0f, 1.0f);
-	pVertices[3] = CUSTOMVERTEX(-10.0f, -10.0f, -10.0f, 0.0f, 1.0f);
+	pVertices[1] = CUSTOMVERTEX( 10.0f,  10.0f, -10.0f, 2.0f, 0.0f);
+	pVertices[2] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 2.0f, 2.0f);
+	pVertices[3] = CUSTOMVERTEX(-10.0f, -10.0f, -10.0f, 0.0f, 2.0f);
 
 	// 背面顶点数据
 	pVertices[4] = CUSTOMVERTEX( 10.0f,  10.0f, 10.0f, 0.0f, 0.0f);
-	pVertices[5] = CUSTOMVERTEX(-10.0f,  10.0f, 10.0f, 1.0f, 0.0f);
-	pVertices[6] = CUSTOMVERTEX(-10.0f, -10.0f, 10.0f, 1.0f, 1.0f);
-	pVertices[7] = CUSTOMVERTEX( 10.0f, -10.0f, 10.0f, 0.0f, 1.0f);
+	pVertices[5] = CUSTOMVERTEX(-10.0f,  10.0f, 10.0f, 2.0f, 0.0f);
+	pVertices[6] = CUSTOMVERTEX(-10.0f, -10.0f, 10.0f, 2.0f, 2.0f);
+	pVertices[7] = CUSTOMVERTEX( 10.0f, -10.0f, 10.0f, 0.0f, 2.0f);
 
 	// 顶面顶点数据
 	pVertices[8]  = CUSTOMVERTEX(-10.0f, 10.0f,  10.0f, 0.0f, 0.0f);
-	pVertices[9]  = CUSTOMVERTEX( 10.0f, 10.0f,  10.0f, 1.0f, 0.0f);
-	pVertices[10] = CUSTOMVERTEX( 10.0f, 10.0f, -10.0f, 1.0f, 1.0f);
-	pVertices[11] = CUSTOMVERTEX(-10.0f, 10.0f, -10.0f, 0.0f, 1.0f);
+	pVertices[9]  = CUSTOMVERTEX( 10.0f, 10.0f,  10.0f, 2.0f, 0.0f);
+	pVertices[10] = CUSTOMVERTEX( 10.0f, 10.0f, -10.0f, 2.0f, 2.0f);
+	pVertices[11] = CUSTOMVERTEX(-10.0f, 10.0f, -10.0f, 0.0f, 2.0f);
 
 	// 底面顶点数据
 	pVertices[12] = CUSTOMVERTEX(-10.0f, -10.0f, -10.0f, 0.0f, 0.0f);
-	pVertices[13] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 1.0f, 0.0f);
-	pVertices[14] = CUSTOMVERTEX( 10.0f, -10.0f,  10.0f, 1.0f, 1.0f);
-	pVertices[15] = CUSTOMVERTEX(-10.0f, -10.0f,  10.0f, 0.0f, 1.0f);
+	pVertices[13] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 2.0f, 0.0f);
+	pVertices[14] = CUSTOMVERTEX( 10.0f, -10.0f,  10.0f, 2.0f, 2.0f);
+	pVertices[15] = CUSTOMVERTEX(-10.0f, -10.0f,  10.0f, 0.0f, 2.0f);
 
 	// 左侧面顶点数据
 	pVertices[16] = CUSTOMVERTEX(-10.0f,  10.0f,  10.0f, 0.0f, 0.0f);
@@ -296,7 +296,6 @@ HRESULT Objects_Init(HWND hwnd)
 	pVertices[21] = CUSTOMVERTEX( 10.0f,  10.0f,  10.0f, 1.0f, 0.0f);
 	pVertices[22] = CUSTOMVERTEX( 10.0f, -10.0f,  10.0f, 1.0f, 1.0f);
 	pVertices[23] = CUSTOMVERTEX( 10.0f, -10.0f, -10.0f, 0.0f, 1.0f);
-
 
 	g_pVertexBuffer->Unlock();
 
@@ -331,7 +330,10 @@ HRESULT Objects_Init(HWND hwnd)
 	g_pIndexBuffer->Unlock();
 
 	//创建纹理
-	D3DXCreateTextureFromFile(g_pd3dDevice,L"pal5q.jpg",&g_pTexture);
+	//D3DXCreateTextureFromFile(g_pd3dDevice,L"pal5q.jpg",&g_pTexture);
+	D3DXCreateTextureFromFileEx(g_pd3dDevice,L"pal5q.jpg",0,0,6,0,D3DFMT_X8R8G8B8,
+		D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,0xFF000000,0,0,&g_pTexture);
+
 
 	//设置材质
 	D3DMATERIAL9 mtrl;
@@ -355,6 +357,23 @@ HRESULT Objects_Init(HWND hwnd)
 	g_pd3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS,true);   //初始化顶点法线
 	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);   //开启背面消隐
 	g_pd3dDevice->SetRenderState(D3DRS_AMBIENT, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f)); //设置环境光
+
+	//各项异性过滤
+	g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAXANISOTROPY,3);
+	g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAGFILTER,D3DTEXF_ANISOTROPIC);
+	g_pd3dDevice->SetSamplerState(0,D3DSAMP_MINFILTER,D3DTEXF_ANISOTROPIC);
+
+	//线性纹理过滤
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAGFILTER,D3DTEXF_LINEAR);
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MINFILTER,D3DTEXF_LINEAR);
+
+	//最近点采样过滤
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAGFILTER,D3DTEXF_POINT);
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MINFILTER,D3DTEXF_POINT);
+
+	//渐进纹理过滤
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MIPFILTER,D3DTEXF_LINEAR);
+	//g_pd3dDevice->SetSamplerState(0,D3DSAMP_MAXMIPLEVEL,16);
 
 	Matrix_Set();//设置四大变换
 	
@@ -437,6 +456,36 @@ VOID Direct3D_Render(HWND hwnd)
 void Direct3D_Update(HWND hwnd)
 {
 	g_pDInput->GetInput();
+
+	//设置纹理寻址方式
+	if (g_pDInput->IsKeyDown(DIK_1))
+	{
+		//重复纹理寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_WRAP);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_WRAP);
+	}
+	if (g_pDInput->IsKeyDown(DIK_2))
+	{
+		//镜像寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_MIRROR);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_MIRROR);
+	}
+	if (g_pDInput->IsKeyDown(DIK_3))
+	{
+		//夹取纹理寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_CLAMP);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_CLAMP);
+	}
+	if (g_pDInput->IsKeyDown(DIK_4))
+	{
+		//边框纹理寻址模式
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_BORDER);
+		g_pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_BORDER);
+	}
+
+
+
+
 
 	//按住鼠标左键拖动，平移操作
 	static FLOAT fPosX = 0.0f, fPosY = 0.0f, fPosZ = 0.0f;
